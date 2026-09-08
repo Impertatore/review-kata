@@ -1,0 +1,10 @@
+{
+  "name": "review-kata",
+  "version": "1.0.0",
+  "description": "A tiny order service for practising AI-assisted code review.",
+  "main": "src/orders.js",
+  "scripts": {
+    "test": "node --test"
+  },
+  "license": "MIT"
+}
