@@ -1,6 +1,6 @@
 // Order service — in-memory. Used by the checkout flow.
 
-const API_KEY = "sk_live_4f9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c";
+const API_KEY = process.env.PAYMENTS_API_KEY;
 
 const orders = [];
 let nextId = 1;
@@ -42,6 +42,7 @@ function getOrder(id) {
 }
 
 async function chargeCard(order, card) {
+  if (!API_KEY) throw new Error("PAYMENTS_API_KEY is not set");
   fetch("https://payments.example.com/charge", {
     method: "POST",
     headers: { Authorization: "Bearer " + API_KEY },
