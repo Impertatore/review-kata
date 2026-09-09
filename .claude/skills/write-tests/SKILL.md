@@ -1,32 +1,24 @@
 ---
 name: write-tests
-description: Write or extend unit tests for a function, class or module. Use whenever the user asks to "write tests", "add tests", "cover this", "test this", or asks whether existing tests are good enough. Enumerates behaviours and failure modes BEFORE writing any test code, and verifies the tests can actually fail.
+description: Write or extend unit tests for a function, class or module from an agreed list of behaviours. Use whenever the user asks to "write tests", "add tests", "cover this", or "test this". Requires the behaviour list from /enumerate-behaviours first; hands verification to /cover-the-gaps afterwards.
 ---
 
 # Write tests
 
-Produce tests that pin down behaviour, cover boundaries, are deterministic, and
-can fail. The enumeration step is mandatory and comes before any code.
+Turn an agreed behaviour list into tests that are readable, deterministic
+and boundary-aware. This skill does not enumerate and does not verify — it
+sits between two other skills.
 
-## Step 1 — Enumerate before writing (do not skip, do not write code yet)
+## Step 1 — Get the behaviour list
 
-Output two lists and stop for the user to edit them:
-
-1. **Behaviours** — what this code is supposed to do, one line each, as
-   observable outcomes ("returns cached value on second call within TTL"),
-   not implementation steps. If the user already listed behaviours in the
-   prompt, use theirs and add only what's clearly missing.
-2. **Failure modes** — every way this could return a wrong answer or throw,
-   however unlikely: empty input, single element, off-by-one at every
-   boundary, null/undefined, wrong type, negative/zero, floating-point
-   drift, unicode, concurrent callers, external call fails or hangs.
-
-Mark which failure modes you think are worth a test and why. Then wait.
-The user picks; you don't decide alone what's "interesting."
+If the user has not supplied an edited behaviour list, run
+`/enumerate-behaviours` on the target and STOP. Do not write any test until
+the user has confirmed or edited the list. If the list contains
+**[assumed]** entries, ask the user to resolve them before proceeding.
 
 ## Step 2 — Boundaries
 
-For every threshold, limit, length or comparison in the code, plan three
+For every threshold, limit, length or comparison in the list, plan three
 tests: the exact boundary value, one tick below, one tick above. If the
 comparison is `>` vs `>=`, the boundary test must distinguish them — a test
 that passes under both is not a boundary test.
@@ -34,7 +26,7 @@ that passes under both is not a boundary test.
 ## Step 3 — Write the tests
 
 - **Names say the behaviour**, never the function: `"cancelling an unknown
-  order throws"` — not `"cancelOrder works"`. If a name could be read
+order throws"` — not `"cancelOrder works"`. If a name could be read
   without knowing which function is under test, it's a good name.
 - **One behaviour per test.** No test asserts two unrelated things.
 - **Deterministic by construction.** No real timers, real dates, real
@@ -47,28 +39,22 @@ that passes under both is not a boundary test.
 - Match the project's existing test framework and file layout. Don't add a
   test dependency without asking.
 
-## Step 4 — Prove they can fail (mandatory)
+## Step 4 — Hand off
 
-After writing, for each behaviour break the implementation in one obvious
-way (flip the comparison, return early, drop the last element) and confirm
-at least one test fails. Report which mutation each test catches. A test
-that passes under every mutation is tautological — rewrite or delete it,
-don't keep it for coverage.
-
-Specifically check for: asserting an object against itself, asserting a
-mock was called with whatever it was called with, `assert.ok(result)` on a
-result that's always truthy, and tests with no assertion.
+After writing, tell the user: "Run /cover-the-gaps on this file to confirm
+every test can fail." Do not claim the tests are good; that's the other
+skill's job.
 
 ## Output
 
-1. The two enumeration lists (Step 1) — first message, then stop.
-2. After the user confirms: the test file(s), then a short table:
-   behaviour → test name → mutation that makes it fail.
+1. The test file(s).
+2. A table: behaviour → test name.
 3. Any seam you needed but couldn't add (e.g. "needs an injectable clock").
+4. The hand-off line.
 
 ## Never
 
-- Never write test code before the enumeration has been shown to the user.
+- Never write test code before an agreed behaviour list exists.
 - Never report coverage numbers as evidence of quality.
 - Never use real client or customer content as test data — synthetic only.
 - Never mark a flaky test as skipped/retry to make it pass; report it.
