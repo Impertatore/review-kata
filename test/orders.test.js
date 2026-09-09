@@ -1,3 +1,15 @@
+// Each name is prefixed with the kind of test it is:
+//
+//   Unit test        — ordinary behaviour of one function
+//   Boundary test    — a threshold or an empty collection
+//   Edge case test   — input the code accepts without validating
+//   Error test       — input the code refuses by throwing
+//   Security test    — a secret or personal detail that must not escape
+//   Integration test — what actually crosses the payments boundary
+//
+// `Regression test` and `Invariant test` are also in use, in
+// test/calculate-total.test.js.
+
 const { test } = require("node:test");
 const assert = require("node:assert");
 const {
@@ -32,14 +44,14 @@ async function withPayments(apiKey, fetchStub, fn) {
   }
 }
 
-test("createOrder returns a populated order", () => {
+test("Unit test: createOrder returns a populated order", () => {
   const order = createOrder(customer, [{ price: 10, qty: 2 }]);
   assert.ok(Number.isInteger(order.id));
   assert.strictEqual(order.total, 20);
   assert.strictEqual(order.status, "new");
 });
 
-test("createOrder does not log customer email", () => {
+test("Security test: createOrder does not log customer email", () => {
   const realLog = console.log;
   const lines = [];
   console.log = (msg) => lines.push(String(msg));
@@ -52,7 +64,7 @@ test("createOrder does not log customer email", () => {
   assert.ok(!lines.some((l) => l.includes(customer.email)), "email must not be logged");
 });
 
-test("calculateTotal includes every item", () => {
+test("Unit test: calculateTotal includes every item", () => {
   const total = calculateTotal([
     { price: 10, qty: 1 },
     { price: 5, qty: 2 },
@@ -61,66 +73,66 @@ test("calculateTotal includes every item", () => {
   assert.strictEqual(total, 30);
 });
 
-test("calculateTotal returns 0 for no items", () => {
+test("Boundary test: calculateTotal returns 0 for no items", () => {
   assert.strictEqual(calculateTotal([]), 0);
 });
 
-test("calculateTotal rounds to whole cents", () => {
+test("Unit test: calculateTotal rounds to whole cents", () => {
   assert.strictEqual(calculateTotal([{ price: 0.1, qty: 3 }]), 0.3);
 });
 
-test("applyDiscount SAVE10 takes 10 percent off", () => {
+test("Unit test: applyDiscount SAVE10 takes 10 percent off", () => {
   const order = { total: 100 };
   assert.strictEqual(applyDiscount(order, "SAVE10").total, 90);
 });
 
-test("applyDiscount SAVE20 takes 20 percent off", () => {
+test("Unit test: applyDiscount SAVE20 takes 20 percent off", () => {
   const order = { total: 100 };
   assert.strictEqual(applyDiscount(order, "SAVE20").total, 80);
 });
 
-test("applyDiscount STAFF zeroes the total", () => {
+test("Unit test: applyDiscount STAFF zeroes the total", () => {
   const order = { total: 100 };
   assert.strictEqual(applyDiscount(order, "STAFF").total, 0);
 });
 
-test("applyDiscount rounds to whole cents", () => {
+test("Unit test: applyDiscount rounds to whole cents", () => {
   const order = { total: 19.99 };
   assert.strictEqual(applyDiscount(order, "SAVE10").total, 17.99);
 });
 
 // Pins today's behaviour: an unrecognised code is a silent no-op. See the PR
 // description — whether that should be an error is a product decision.
-test("applyDiscount leaves the total alone for an unknown code", () => {
+test("Edge case test: applyDiscount leaves the total alone for an unknown code", () => {
   const order = { total: 100 };
   assert.strictEqual(applyDiscount(order, "NOPE").total, 100);
 });
 
-test("getOrder finds an order by id", () => {
+test("Unit test: getOrder finds an order by id", () => {
   const created = createOrder(customer, []);
   assert.strictEqual(getOrder(created.id), created);
 });
 
-test("getOrder accepts a numeric string id", () => {
+test("Edge case test: getOrder accepts a numeric string id", () => {
   const created = createOrder(customer, []);
   assert.strictEqual(getOrder(String(created.id)), created);
 });
 
-test("getOrder returns undefined for an unknown id", () => {
+test("Edge case test: getOrder returns undefined for an unknown id", () => {
   assert.strictEqual(getOrder(UNKNOWN_ID), undefined);
 });
 
-test("cancelOrder cancels a known order", () => {
+test("Unit test: cancelOrder cancels a known order", () => {
   const created = createOrder(customer, []);
   assert.strictEqual(cancelOrder(created.id), true);
   assert.strictEqual(created.status, "cancelled");
 });
 
-test("cancelOrder returns false for an unknown id", () => {
+test("Edge case test: cancelOrder returns false for an unknown id", () => {
   assert.strictEqual(cancelOrder(UNKNOWN_ID), false);
 });
 
-test("chargeCard marks the order paid when the charge succeeds", async () => {
+test("Integration test: chargeCard marks the order paid when the charge succeeds", async () => {
   const order = createOrder(customer, [{ price: 10, qty: 1 }]);
   await withPayments("test-key", async () => ({ ok: true, status: 200 }), () =>
     chargeCard(order, "4242424242424242")
@@ -128,7 +140,7 @@ test("chargeCard marks the order paid when the charge succeeds", async () => {
   assert.strictEqual(order.status, "paid");
 });
 
-test("chargeCard does not mark the order paid when the charge fails", async () => {
+test("Error test: chargeCard does not mark the order paid when the charge fails", async () => {
   const order = createOrder(customer, [{ price: 10, qty: 1 }]);
   await withPayments("test-key", async () => ({ ok: false, status: 402 }), async () => {
     await assert.rejects(() => chargeCard(order, "4242424242424242"), /HTTP 402/);
@@ -136,7 +148,7 @@ test("chargeCard does not mark the order paid when the charge fails", async () =
   assert.strictEqual(order.status, "new");
 });
 
-test("chargeCard throws and sends nothing when the API key is missing", async () => {
+test("Error test: chargeCard throws and sends nothing when the API key is missing", async () => {
   const order = createOrder(customer, []);
   await withPayments(
     undefined,
@@ -150,7 +162,7 @@ test("chargeCard throws and sends nothing when the API key is missing", async ()
   assert.strictEqual(order.status, "new");
 });
 
-test("chargeCard reads the key at call time, not at import", async () => {
+test("Integration test: chargeCard reads the key at call time, not at import", async () => {
   const order = createOrder(customer, []);
   await withPayments(
     "late-key",
@@ -163,7 +175,7 @@ test("chargeCard reads the key at call time, not at import", async () => {
   assert.strictEqual(order.status, "paid");
 });
 
-test("chargeCard failure leaks neither the card nor the key", async () => {
+test("Security test: chargeCard failure leaks neither the card nor the key", async () => {
   const order = createOrder(customer, [{ price: 10, qty: 1 }]);
   await withPayments("super-secret-key", async () => ({ ok: false, status: 500 }), async () => {
     await assert.rejects(
@@ -178,7 +190,7 @@ test("chargeCard failure leaks neither the card nor the key", async () => {
   });
 });
 
-test("chargeCard posts to the configured payments URL", async () => {
+test("Integration test: chargeCard posts to the configured payments URL", async () => {
   const order = createOrder(customer, []);
   const realUrl = process.env.PAYMENTS_URL;
   process.env.PAYMENTS_URL = "https://sandbox.example.test/charge";
