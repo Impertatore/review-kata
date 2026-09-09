@@ -1,0 +1,42 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # No dependencies and no lockfile, so there is nothing to install.
+      # `npm test` is `node --test`, the built-in runner.
+      - run: npm test
+
+      # A green suite is not evidence that the tests assert anything — see
+      # .claude/skills/cover-the-gaps. This step reports the other half of the
+      # picture: how many tests are AI-written and not yet vouched for by a
+      # human. The tag is removed when someone has read the test and would
+      # defend it in review.
+      - name: Count unreviewed AI-generated tests
+        run: |
+          hits=$(git grep -n "@ai-generated" -- test/ || true)
+          if [ -z "$hits" ]; then
+            echo "No @ai-generated tags in test/ — nothing unreviewed."
+            exit 0
+          fi
+          count=$(printf '%s\n' "$hits" | wc -l | tr -d ' ')
+          printf '%s\n' "$hits" | while IFS=: read -r file line _; do
+            echo "::warning file=$file,line=$line::AI-generated test not yet reviewed by a human"
+          done
+          echo "::warning::$count AI-generated test(s) still unreviewed — a human must read and vouch for each before merge"
+          # To make this blocking instead of advisory, uncomment:
+          #   exit 1

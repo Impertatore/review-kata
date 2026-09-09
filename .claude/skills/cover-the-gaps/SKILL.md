@@ -127,8 +127,10 @@ are tautological on inspection, and a crash-style break can mask them by
 1. **Behaviour → covered by / not covered**, one row each.
 2. **Test → tautological yes/no**, with the break that kills it, or `none`.
 3. **Survivors**, as the gap list.
-4. Confirmation that the source was restored byte-identical.
-5. Hand-off: "Run /write-tests for the uncovered behaviours."
+4. **How many tests in the file still carry `// @ai-generated`** — the count of
+   AI-written tests no human has yet read and vouched for.
+5. Confirmation that the source was restored byte-identical.
+6. Hand-off: "Run /write-tests for the uncovered behaviours."
 
 ## Never
 

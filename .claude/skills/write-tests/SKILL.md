@@ -38,6 +38,9 @@ order throws"` — not `"cancelOrder works"`. If a name could be read
   constructed for the test, never copied from production or client content.
 - Match the project's existing test framework and file layout. Don't add a
   test dependency without asking.
+- **Tag every generated test** with `// @ai-generated` on the line above it.
+  Remove the tag only when a human has read the test and would defend it in
+  review. The tag is a grep target, not a comment for humans.
 
 ## Step 4 — Hand off
 
