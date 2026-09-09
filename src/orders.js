@@ -7,8 +7,17 @@ let nextId = 1;
 
 // Totals are held as Numbers, so every result is rounded back to whole cents
 // before it is stored or charged.
+//
+// Money is decimal but a Number is binary, and the two disagree at exactly the
+// point that matters: 1.005 * 100 is 100.49999999999999, so rounding the scaled
+// value directly would drop the cent. Re-reading it at 15 significant digits
+// discards that representation error while keeping every digit money can carry.
+// Rounding the magnitude, then restoring the sign, breaks ties away from zero
+// in both directions, so a credit and a charge of the same size cancel.
 function toMoney(value) {
-  return Math.round(value * 100) / 100;
+  const cents = Math.round(Number((Math.abs(value) * 100).toPrecision(15)));
+  const signed = value < 0 ? -cents : cents;
+  return signed === 0 ? 0 : signed / 100;
 }
 
 function createOrder(customer, items) {
