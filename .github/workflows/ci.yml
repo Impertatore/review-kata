@@ -12,9 +12,11 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
+          # The Node the tests run on — this repo supports 20+, so 20 is the
+          # floor we verify. Unrelated to the runtime the actions above use.
           node-version: 20
 
       # No dependencies and no lockfile, so there is nothing to install.
