@@ -23,4 +23,5 @@ You are reviewing a pull request. Do the following, in order:
 4. **A second angle.** Re-read the diff as if you were the person on-call
    this weekend. What would you want to know before approving?
 
+5. **Make a table comparation** - new employee, on call person, security manager
 Keep each section short. Quote specific lines or files where relevant.
